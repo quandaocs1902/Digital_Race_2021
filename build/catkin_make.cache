@@ -1,0 +1,2 @@
+python_pkg
+-DCATKIN_DEVEL_PREFIX=/home/quandao/Digital_Race/python_ws/devel -DCMAKE_INSTALL_PREFIX=/home/quandao/Digital_Race/python_ws/install -G Unix Makefiles

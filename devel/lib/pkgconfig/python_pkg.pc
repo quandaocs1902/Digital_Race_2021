@@ -1,0 +1,8 @@
+prefix=/home/quandao/Digital_Race/python_ws/devel
+
+Name: python_pkg
+Description: Description of python_pkg
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
