@@ -7,11 +7,8 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float32
 import numpy as np
 import sys
-from sklearn.linear_model import RANSACRegressor
-import matplotlib.pyplot as plt
-from numpy.lib.polynomial import polyfit
-from sklearn.metrics import mean_squared_error
 from python_pkg import lane_detect_module
+import datetime
 
 def get_depth(depth_img):
     points_1 = [50, 90, 110, 150, 170, 210, 230, 270]
@@ -58,9 +55,14 @@ class image_feature:
 		# cv2.waitKey(2)
 	
 	def callback_rgb(self, ros_data):
+		running_time = datetime.datetime.now()
 		np_arr_rgb = np.frombuffer(ros_data.data, np.uint8)
 		rgb = cv2.imdecode(np_arr_rgb, cv2.IMREAD_COLOR)
 		canny_img = lane_detect_module.preprocess(rgb)
+		lane_detected = lane_detect_module.line_detect(canny_img)
+		cv2.imshow("Lane detected", lane_detected)
+		print("Callback time: ", running_time)
+		print("After detect lane: ", datetime.datetime.now() - running_time)
 		self.angle.publish(0)
         
 
