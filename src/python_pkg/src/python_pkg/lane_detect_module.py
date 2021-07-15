@@ -29,7 +29,19 @@ def find_threshold(img):
     return threshold
 
 # Data preprocessing
-def preprocess(img):
+def preprocess(img, medianKsize = 3, s_offset = 20, v_offset = 50, CannyThres1 = 100, CannyThres2 = 200):
+    """
+        preprocess function detect edges of the lane
+
+        :param img: raw image got from simulation
+        :param medianKsize: kernel size for Median Blur
+        :param s_offset: offset to find mean threshold for s image
+        :param v_offset: offset to find mean threshold for v image
+        :param CannyThres1: lower threshold for Canny Edge Detection
+        :param CannyThres2: higher threshold for Canny Edge Detection
+
+        :return: noise-filtered and canny-applied ROI
+    """
     # Read image
     global warped
     # img = cv.imread(str(image_path), cv.IMREAD_COLOR)
@@ -38,12 +50,12 @@ def preprocess(img):
     hsv = cv.cvtColor(warped, cv.COLOR_BGR2HSV)
     h, s, v = cv.split(hsv)
     # Blurr image
-    s_blurred = cv.medianBlur(s, 3)
-    v_blurred = cv.medianBlur(v, 3)
+    s_blurred = cv.medianBlur(s, medianKsize)
+    v_blurred = cv.medianBlur(v, medianKsize)
 
     # Convert to binary image
-    s_threshold = find_threshold(s) + 20
-    v_threshold = find_threshold(v) + 50
+    s_threshold = find_threshold(s) + s_offset
+    v_threshold = find_threshold(v) + v_offset
 
     _, s_thresh = cv.threshold(
         s_blurred, s_threshold, 255, cv.THRESH_BINARY_INV)
@@ -52,14 +64,16 @@ def preprocess(img):
     # final = cv.bitwise_and(s_thresh, v_thresh)[100:, :]
     final = cv.bitwise_and(s_thresh, v_thresh)
     #canny = canny_edge_detect(final)
-    canny = cv.Canny(final, 100, 200)
+    canny = cv.Canny(final, CannyThres1, CannyThres2)
     return canny
 
 def downsample(ROI):
     col_index = 0
-    result = np.zeros((24, 320), dtype=np.float)
-    for i in range(0, ROI.shape[0], 10):
-        for j in range(0, ROI.shape[1]):
+    m = ROI.shape[0]
+    n = ROI.shape[1]
+    result = np.zeros((m // 10, n), dtype=np.float)
+    for i in range(0, m, 10):
+        for j in range(0, n):
             process = ROI[i: i + 10, j]
             value = np.sum(process, dtype=np.float)
             result[col_index][j] = value
@@ -74,30 +88,30 @@ def ranges(nums):
     return list(zip(edges, edges))
 
 # Determine xLeft, xMid, xRight
-def getmeanX(process, img):
+def getmeanX(process, left_thres = 80, right_thres = 160):
     dataLeft = []
     dataRight = []
-    dataMid = []
+    # dataMid = []
     for i in range(process.shape[0]):
         ROI = process[i, :]
         xValue = np.where(ROI > 0)
         x = ranges(list(xValue[0]))
         try:
             for j in x:
-                if (np.mean(j, dtype=np.int) <= 80):
+                if (np.mean(j, dtype=np.int) <= left_thres):
                     left = [np.mean(j, dtype=np.int), 5 + i * 10]
                     dataLeft.append(left)
                     # Tuple to draw circle
                     l = (np.mean(j, dtype = np.int), 5 + i * 10)
                     cv.circle(warped, l, 2, (214, 57, 17), 2)
-                elif (np.mean(j, dtype=np.int) >= 160):
+                elif (np.mean(j, dtype=np.int) >= right_thres):
                     right = [np.mean(j, dtype=np.int), 5 + i * 10]
                     dataRight.append(right)
                     # Tuple to draw circle
                     r = (np.mean(j, dtype = np.int), 5 + i * 10)
                     cv.circle(warped, r, 2, (0, 84, 163), 2)
-                else:
-                    dataMid.append((np.mean(j, dtype=np.int), 5 + i * 10))
+                # else:
+                #     dataMid.append((np.mean(j, dtype=np.int), 5 + i * 10))
         except IndexError:
             pass
         cv.imshow("warped", warped)
